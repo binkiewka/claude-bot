@@ -27,7 +27,11 @@ class ClaudeCog(commands.Cog):
             server_id = str(message.guild.id)
             server_channels = self.bot.allowed_channels.get(server_id, [])
             
-            if message.channel.id not in server_channels:
+            # Make sure server_channels is a list
+            if not isinstance(server_channels, list):
+                server_channels = [server_channels] if server_channels else []
+
+            if server_channels and message.channel.id not in server_channels:
                 self.bot.logger.info(f"Channel {message.channel.id} not in allowed channels for server {message.guild.id}")
                 return
 
@@ -71,6 +75,9 @@ class ClaudeCog(commands.Cog):
         # Initialize server's allowed channels if not exists
         if server_id not in self.bot.allowed_channels:
             self.bot.allowed_channels[server_id] = []
+        elif not isinstance(self.bot.allowed_channels[server_id], list):
+            # Convert to list if it's not already
+            self.bot.allowed_channels[server_id] = [self.bot.allowed_channels[server_id]]
         
         # Add channel to server's allowed channels if not already present
         if channel.id not in self.bot.allowed_channels[server_id]:
@@ -88,6 +95,9 @@ class ClaudeCog(commands.Cog):
         server_id = str(ctx.guild.id)
         
         if server_id in self.bot.allowed_channels:
+            if not isinstance(self.bot.allowed_channels[server_id], list):
+                self.bot.allowed_channels[server_id] = [self.bot.allowed_channels[server_id]]
+
             if channel.id in self.bot.allowed_channels[server_id]:
                 self.bot.allowed_channels[server_id].remove(channel.id)
                 if not self.bot.allowed_channels[server_id]:  # If no channels left
@@ -104,12 +114,17 @@ class ClaudeCog(commands.Cog):
     @global_error_handler
     async def list_channels(self, ctx):
         server_id = str(ctx.guild.id)
-        if server_id not in self.bot.allowed_channels or not self.bot.allowed_channels[server_id]:
+        channels = self.bot.allowed_channels.get(server_id, [])
+        
+        if not channels:
             await ctx.send("Claude is not allowed in any channels in this server.")
             return
 
+        if not isinstance(channels, list):
+            channels = [channels]
+
         channel_mentions = []
-        for channel_id in self.bot.allowed_channels[server_id]:
+        for channel_id in channels:
             channel = ctx.guild.get_channel(channel_id)
             if channel:
                 channel_mentions.append(channel.mention)
@@ -120,10 +135,16 @@ class ClaudeCog(commands.Cog):
     async def on_guild_channel_delete(self, channel):
         server_id = str(channel.guild.id)
         if server_id in self.bot.allowed_channels:
-            if channel.id in self.bot.allowed_channels[server_id]:
-                self.bot.allowed_channels[server_id].remove(channel.id)
-                if not self.bot.allowed_channels[server_id]:  # If no channels left
+            channels = self.bot.allowed_channels[server_id]
+            if not isinstance(channels, list):
+                channels = [channels]
+                
+            if channel.id in channels:
+                channels.remove(channel.id)
+                if not channels:  # If no channels left
                     del self.bot.allowed_channels[server_id]
+                else:
+                    self.bot.allowed_channels[server_id] = channels
                 await self.bot.save_allowed_channels()
 
     @commands.command(name="reset")
@@ -143,8 +164,11 @@ class ClaudeCog(commands.Cog):
         server_id = str(ctx.guild.id)
         channel_id = ctx.channel.id
         
-        is_active = (server_id in self.bot.allowed_channels and 
-                    channel_id in self.bot.allowed_channels[server_id])
+        channels = self.bot.allowed_channels.get(server_id, [])
+        if not isinstance(channels, list):
+            channels = [channels]
+            
+        is_active = channels and channel_id in channels
         
         current_role = self.bot.claude_service.role_config.get_server_role(server_id)
         
@@ -164,16 +188,16 @@ class ClaudeCog(commands.Cog):
             inline=True
         )
         
-        if server_id in self.bot.allowed_channels:
-            allowed_channels = []
-            for channel_id in self.bot.allowed_channels[server_id]:
+        if channels:
+            allowed_channel_mentions = []
+            for channel_id in channels:
                 channel = ctx.guild.get_channel(channel_id)
                 if channel:
-                    allowed_channels.append(channel.mention)
-            if allowed_channels:
+                    allowed_channel_mentions.append(channel.mention)
+            if allowed_channel_mentions:
                 embed.add_field(
                     name="Allowed Channels",
-                    value="\n".join(allowed_channels),
+                    value="\n".join(allowed_channel_mentions),
                     inline=False
                 )
         
