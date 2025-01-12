@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:13
+    container_name: claude_postgres
+    restart: always
+    network_mode: host
+    user: postgres
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data:Z
+    environment:
+      - POSTGRES_DB=claude_bot
+      - POSTGRES_USER=claude
+      - POSTGRES_PASSWORD=${POSTGRES_DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    security_opt:
+      - label:disable
+
+  claude_bot:
+    build:
+      context: .
+    container_name: claude_bot
+    restart: always
+    network_mode: host
+    depends_on:
+      - postgres
+    volumes:
+      - /opt/claude-bot:/opt/claude-bot
+      - /opt/claude-bot/credentials:/app/credentials
+      - /opt/claude-bot/logs:/app/logs
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - GOOGLE_CREDENTIALS_PATH=/app/credentials/credentials.json
+      - DATABASE_URL=postgresql+asyncpg://claude:${POSTGRES_DB_PASSWORD}@localhost/claude_bot
+    env_file:
+      - .env

@@ -1,0 +1,29 @@
+# Discord
+discord.py==2.3.2
+discord==2.3.2
+
+# AI and API
+anthropic==0.7.0
+requests==2.31.0
+
+# Google Services
+google-auth==2.22.0
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
+google-api-python-client==2.97.0
+
+# Utilities
+python-dotenv==1.0.0
+typing-extensions==4.7.1
+asyncio==3.4.3
+aiohttp
+
+# Database
+sqlalchemy==2.0.36
+asyncpg
+psycopg2-binary
+
+python-telegram-bot==20.3
+openai==0.27.8
+PyYAML==6.0.1
+
