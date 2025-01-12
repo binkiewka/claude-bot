@@ -106,7 +106,7 @@ sudo chmod -R 755 /opt/claude-bot
 ### Clone Repository
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/claude-bot.git
+git clone https://github.com/binkiewka/claude-bot.git
 cd claude-bot
 
 # Copy files to production directory
